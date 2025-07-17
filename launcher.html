@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Launcher - Mini Translator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f4f4;
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #0a84ff;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #006fe0;
+    }
+  </style>
+</head>
+<body>
+  <h2>🚀 Launch Mini CS Translator</h2>
+  <button onclick="openTranslator()">Buka Translator</button>
+
+  <script>
+    function openTranslator() {
+      window.open("translator.html", "_blank", "width=400,height=600,resizable=no");
+    }
+  </script>
+</body>
+</html>

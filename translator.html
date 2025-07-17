@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=400" />
+  <title>Mini CS Translator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 16px;
+      width: 400px;
+      height: 600px;
+      overflow: hidden;
+      box-sizing: border-box;
+      background-color: #1f1f1f;
+      color: #eee;
+      transition: background 0.3s, color 0.3s;
+    }
+    h2 {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    textarea {
+      width: 100%;
+      height: 70px;
+      font-size: 14px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      resize: none;
+      background-color: inherit;
+      color: inherit;
+    }
+    .output {
+      background-color: #333;
+      margin-top: 6px;
+      padding: 10px;
+      border-radius: 6px;
+      position: relative;
+      min-height: 50px;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border: none;
+      border-radius: 4px;
+      background-color: #0a84ff;
+      color: white;
+      cursor: pointer;
+    }
+    .toggle-dark {
+      font-size: 12px;
+      padding: 4px 10px;
+      margin-bottom: 10px;
+      background: transparent;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      cursor: pointer;
+      float: right;
+    }
+    .section {
+      margin-bottom: 24px;
+    }
+    .clear { clear: both; }
+    #toast {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #219653;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 999;
+    }
+  </style>
+</head>
+<body class="dark" style="overflow: hidden;">
+  <button class="toggle-dark" onclick="toggleDark()" id="mode-toggle">🌞</button>
+  <div class="clear"></div>
+  <div class="section">
+    <h2>📨 Pesan dari Pelanggan (EN)</h2>
+    <textarea id="input-en" placeholder="Masukkan pesan pelanggan dalam bahasa Inggris..."></textarea>
+    <div class="output" id="output-id">
+      <button class="copy-btn" onclick="copyText('output-id')">Salin</button>
+      <div id="translated-id">Terjemahan ke Bahasa Indonesia...</div>
+    </div>
+  </div>
+  <div class="section">
+    <h2>✍️ Balasan CS (ID)</h2>
+    <textarea id="input-id" placeholder="Tulis balasan dalam bahasa Indonesia..."></textarea>
+    <div class="output" id="output-en">
+      <button class="copy-btn" onclick="copyText('output-en')">Salin</button>
+      <div id="translated-en">Terjemahan ke Bahasa Inggris...</div>
+    </div>
+  </div>
+  <div id="toast">✅ Teks berhasil disalin!</div>
+  <script>
+    const API_KEY = "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";
+    function toggleDark() {
+      const body = document.body;
+      const toggleBtn = document.getElementById("mode-toggle");
+      body.classList.toggle("dark");
+      toggleBtn.innerText = body.classList.contains("dark") ? "🌞" : "🌙";
+    }
+    function copyText(containerId) {
+      const text = document.querySelector(`#${containerId} div`).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("✅ Teks berhasil disalin!");
+      });
+    }
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 2000);
+    }
+    function debounce(func, delay) {
+      let timer;
+      return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), delay);
+      };
+    }
+    async function translate(text, direction) {
+      const systemPrompt = direction === "en-to-id"
+        ? "You are an Indonesian customer support translator. Translate casual English into formal Indonesian."
+        : "You are an English translator. Translate polite Indonesian replies into fluent, professional English.";
+      const userPrompt = `Translate this message:\n${text}`;
+      try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ],
+            temperature: 0.2
+          })
+        });
+        const data = await res.json();
+        const result = data.choices?.[0]?.message?.content?.trim() || "[Gagal menerjemahkan]";
+        if (direction === "en-to-id") {
+          document.getElementById("translated-id").innerText = result;
+        } else {
+          document.getElementById("translated-en").innerText = result;
+        }
+      } catch (err) {
+        console.error(err);
+        const target = direction === "en-to-id" ? "translated-id" : "translated-en";
+        document.getElementById(target).innerText = "[Terjadi kesalahan]";
+      }
+    }
+    document.getElementById("input-en").addEventListener("input", debounce(() => {
+      const text = document.getElementById("input-en").value.trim();
+      if (text) translate(text, "en-to-id");
+    }, 700));
+    document.getElementById("input-id").addEventListener("input", debounce(() => {
+      const text = document.getElementById("input-id").value.trim();
+      if (text) translate(text, "id-to-en");
+    }, 700));
+  </script>
+</body>
+</html>
